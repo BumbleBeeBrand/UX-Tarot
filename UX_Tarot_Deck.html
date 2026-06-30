@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UX Tarot — The Researcher's Arcana</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: #0F172A; color: #E2E8F0; font-family: system-ui, -apple-system, sans-serif; min-height: 100vh; }
+
+  .header { text-align: center; padding: 32px 16px 16px; }
+  .header .eyebrow { font-size: 14px; letter-spacing: 6px; color: #7C3AED; font-weight: 600; margin-bottom: 4px; }
+  .header h1 { font-size: 36px; font-weight: 800; margin: 4px 0; background: linear-gradient(135deg, #7C3AED, #0891B2); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .header .sub { color: #94A3B8; font-size: 14px; margin: 4px 0 0; }
+
+  .tabs { display: flex; justify-content: center; gap: 4px; padding: 8px 8px 16px; flex-wrap: wrap; }
+  .tab-btn { padding: 8px 14px; border-radius: 8px; border: none; cursor: pointer; font-size: 13px; font-weight: 600; background: #1E293B; color: #94A3B8; transition: all 0.2s; }
+  .tab-btn.active { color: #FFF; }
+
+  .suit-desc { text-align: center; padding: 0 16px 16px; }
+  .suit-desc .title { font-size: 16px; font-weight: 700; }
+  .suit-desc .desc { color: #64748B; font-size: 13px; }
+
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; padding: 0 16px 32px; max-width: 900px; margin: 0 auto; }
+
+  .card { border-radius: 12px; padding: 14px; cursor: pointer; transition: all 0.2s; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 4px; min-height: 140px; }
+  .card:hover { transform: translateY(-4px); }
+  .card .sym { font-size: 28px; margin-bottom: 2px; }
+  .card .tarot-name { font-size: 10px; color: #64748B; letter-spacing: 1px; }
+  .card .card-name { font-size: 13px; font-weight: 700; color: #F1F5F9; line-height: 1.3; }
+  .card .tap { font-size: 10px; color: #64748B; margin-top: auto; }
+
+  /* Modal */
+  .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 16px; }
+  .modal { background: #1E293B; border-radius: 16px; max-width: 520px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 24px; }
+  .modal-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .modal .sym { font-size: 40px; margin-bottom: 4px; }
+  .modal .tarot-label { font-size: 11px; color: #64748B; letter-spacing: 2px; text-transform: uppercase; }
+  .modal h2 { font-size: 22px; font-weight: 800; color: #F8FAFC; margin: 4px 0; }
+  .modal .quip { font-size: 13px; font-style: italic; line-height: 1.4; }
+  .close-btn { background: none; border: none; color: #64748B; font-size: 24px; cursor: pointer; padding: 4px; }
+  .meaning-label { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .meaning-label .icon { font-size: 16px; }
+  .meaning-label .label { font-size: 13px; font-weight: 700; letter-spacing: 1px; }
+  .meaning-text { font-size: 14px; line-height: 1.6; color: #CBD5E1; margin: 0 0 16px; }
+  .source-box { background: #0F172A; border-radius: 8px; padding: 12px; margin-top: 8px; }
+  .source-box .src-label { font-size: 11px; color: #64748B; letter-spacing: 1px; margin-bottom: 4px; }
+  .source-box .src-text { font-size: 12px; color: #94A3B8; line-height: 1.5; }
+
+  /* Spreads */
+  .spreads-container { max-width: 600px; margin: 0 auto; padding: 0 16px 32px; }
+  .spread-card { background: #1E293B; border-radius: 12px; padding: 20px; margin-bottom: 12px; cursor: pointer; border: 1px solid #334155; transition: all 0.2s; }
+  .spread-card:hover { border-color: #7C3AED; }
+  .spread-card h3 { font-size: 18px; font-weight: 700; color: #F8FAFC; margin: 0; }
+  .spread-card p { font-size: 13px; color: #94A3B8; margin: 4px 0 0; }
+  .spread-tags { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .spread-tag { font-size: 11px; background: #0F172A; color: #7C3AED; padding: 3px 8px; border-radius: 4px; }
+  .spread-info { font-size: 13px; color: #7C3AED; font-weight: 600; white-space: nowrap; }
+
+  .reading-grid { display: grid; gap: 12px; justify-items: center; }
+  .reading-card { border-radius: 12px; padding: 16px; cursor: pointer; text-align: center; width: 100%; max-width: 180px; transition: all 0.2s; }
+  .reading-card:hover { filter: brightness(1.2); }
+  .reading-card .sym { font-size: 32px; margin-bottom: 4px; }
+  .reading-card .card-name { font-size: 13px; font-weight: 700; color: #F1F5F9; }
+  .reading-card .tarot-name { font-size: 10px; color: #64748B; margin-top: 2px; }
+
+  .position-labels { display: grid; gap: 12px; margin-top: 8px; justify-items: center; }
+  .pos-label { text-align: center; font-size: 12px; color: #7C3AED; font-weight: 600; padding: 4px 0; }
+
+  .reading-section { margin-top: 24px; }
+  .reading-section h3 { font-size: 16px; font-weight: 700; color: #F8FAFC; margin-bottom: 12px; }
+  .reading-item { background: #1E293B; border-radius: 10px; padding: 14px; margin-bottom: 8px; }
+  .reading-item-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .reading-pos { font-size: 12px; color: #7C3AED; font-weight: 600; }
+  .reading-arrow { font-size: 12px; color: #475569; margin: 0 6px; }
+  .reading-name { font-size: 13px; font-weight: 700; color: #F1F5F9; }
+  .reversed-badge { font-size: 10px; background: rgba(239,68,68,0.13); color: #EF4444; padding: 2px 8px; border-radius: 4px; font-weight: 600; }
+  .reading-meaning { font-size: 13px; line-height: 1.5; color: #94A3B8; margin: 0; }
+
+  .action-btn { border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-size: 13px; font-weight: 600; margin: 8px 4px; }
+  .btn-primary { background: #7C3AED; color: #FFF; }
+  .btn-secondary { background: #334155; color: #CBD5E1; }
+
+  .footer { text-align: center; padding: 24px 16px 32px; border-top: 1px solid #1E293B; }
+  .footer p { font-size: 11px; color: #475569; margin: 4px 0; }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="eyebrow">THE RESEARCHER'S ARCANA</div>
+  <h1>UX Tarot</h1>
+  <p class="sub">78 cards · Grounded in validated UX industry sources</p>
+</div>
+
+<div class="tabs" id="tabs"></div>
+<div class="suit-desc" id="suitDesc"></div>
+<div class="card-grid" id="cardGrid"></div>
+<div class="spreads-container hidden" id="spreadsContainer"></div>
+<div id="modalContainer"></div>
+
+<div class="footer">
+  <p>UX Tarot: The Researcher's Arcana · 78 cards grounded in industry-standard UX sources</p>
+  <p>All concepts sourced from peer-reviewed research, industry standards (WCAG, ISO 9241), and canonical UX texts</p>
+</div>
+
+<script>
+// ============================================================
+// DATA
+// ============================================================
+const SUITS = {
+  major: { name: "Major Arcana", subtitle: "The Researcher's Journey", color: "#7C3AED", icon: "✨", desc: "22 archetypal forces of UX practice" },
+  wands: { name: "Pencils", subtitle: "Discovery", color: "#EA580C", icon: "✏️", desc: "Research methods & exploration" },
+  cups: { name: "Research", subtitle: "Empathy", color: "#0891B2", icon: "🔬", desc: "User understanding & relationships" },
+  swords: { name: "Roadmap", subtitle: "Analysis", color: "#6B7280", icon: "🗺️", desc: "Thinking, synthesis & decisions" },
+  pentacles: { name: "Design", subtitle: "Craft", color: "#16A34A", icon: "🎨", desc: "Design, delivery & tangible outputs" },
+};
+
+const majorArcana = [
+  { id:0, name:"The User", tarot:"The Fool", sym:"🧑", quip:"Every product journey begins with someone who just wants to get something done.", up:"The beginning of every design journey. Represents approaching problems with beginner's mind, seeing what experts overlook. Reminds us that the user's perspective is always the starting point, not our assumptions.", rev:"Designing for an imaginary user. Building based on what you think people want instead of observing what they actually do. Skipping research because 'we already know our users.'", src:"Don Norman, The Design of Everyday Things (1988); ISO 9241-210 Human-Centered Design" },
+  { id:1, name:"The Facilitator", tarot:"The Magician", sym:"🎩", quip:"The best facilitators make participants forget there's a guide in the room.", up:"Mastery of the research toolkit. The skilled moderator who creates conditions for authentic insight through neutrality, active listening, and well-crafted questions. Knows when to probe and when to let silence do the work.", rev:"Leading the witness. Asking questions that confirm your hypothesis. Talking more than the participant. The facilitator whose 'unbiased' discussion guide is anything but.", src:"Steve Portigal, Interviewing Users (2013); Erika Hall, Just Enough Research (2013)" },
+  { id:2, name:"The Insight", tarot:"The High Priestess", sym:"🔮", quip:"An insight isn't a finding. A finding is 'users struggled.' An insight is 'users struggled because they thought X meant Y.'", up:"The moment when data becomes understanding. Hidden knowledge revealed through rigorous analysis. The difference between reporting what happened and explaining why it matters. Insights connect observed behavior to underlying motivation.", rev:"Mistaking observations for insights. Stating the obvious and calling it a finding. 'Users want things to be easy' is not an insight — it's a truism.", src:"Indi Young, Practical Empathy (2015); NNG Insight Definition" },
+  { id:3, name:"Empathy", tarot:"The Empress", sym:"💚", quip:"Empathy isn't 'I feel your pain.' It's 'I understand why you feel pain here, and I can explain it to engineers.'", up:"Deep, practiced understanding of users' contexts, motivations, and constraints. Not sympathy (feeling for) but empathy (understanding from within). The foundation of human-centered design. Requires active effort, not just good intentions.", rev:"Performative empathy. Claiming to care about users while ignoring their feedback. Using 'empathy' as a buzzword without doing the work of understanding. Projecting your own feelings onto users.", src:"IDEO Design Thinking Framework; Indi Young, Practical Empathy (2015)" },
+  { id:4, name:"The Design System", tarot:"The Emperor", sym:"🏛️", quip:"A design system is not a Figma library. It's a shared language that lets teams build coherently without a meeting.", up:"Structure, consistency, and governance at scale. Atomic Design's hierarchy: atoms, molecules, organisms, templates, pages. The infrastructure that enables teams to move fast without breaking coherence. Includes tokens, components, patterns, and principles.", rev:"A design system that's become a cage. Over-governance that stifles innovation. The system nobody uses because it's too rigid, too outdated, or too divorced from real product needs.", src:"Brad Frost, Atomic Design (2016); Nathan Curtis, Design Systems Handbook" },
+  { id:5, name:"The Heuristic", tarot:"The Hierophant", sym:"📜", quip:"Nielsen's 10 Heuristics: still the fastest way to find 80% of usability problems with 0% of users.", up:"Established wisdom and expert evaluation. The 10 usability heuristics provide a proven framework for identifying common problems: visibility of system status, match between system and real world, user control, consistency, error prevention, recognition over recall, flexibility, aesthetic minimalism, error recovery, and help/documentation.", rev:"Treating heuristics as a checklist instead of a lens. Using expert review as a substitute for user research. Confusing 'follows the guidelines' with 'actually usable.'", src:"Jakob Nielsen, 10 Usability Heuristics for User Interface Design (1994)" },
+  { id:6, name:"User-Product Fit", tarot:"The Lovers", sym:"❤️", quip:"Product-market fit is a business metric. User-product fit is the moment someone says 'where has this been all my life?'", up:"Alignment between what users need and what the product delivers. The sweet spot where utility, usability, and desirability overlap. When the product's mental model matches the user's mental model. True fit is discovered through research, not assumed.", rev:"Building a solution in search of a problem. The product that's technically impressive but nobody asked for. Forcing users to adapt to the product instead of adapting the product to users.", src:"Jesse James Garrett, Elements of User Experience (2002); Marc Andreessen on Product-Market Fit" },
+  { id:7, name:"The Sprint", tarot:"The Chariot", sym:"⚡", quip:"Five days. One problem. Prototype on Thursday. Test on Friday. No committees required.", up:"Directed momentum and time-boxed progress. The design sprint compresses months of debate into a focused week of building and testing. Represents the power of constraints to drive creativity and decisiveness.", rev:"Sprinting without direction. Moving fast for the sake of velocity. Running a 'sprint' that's really just a compressed waterfall process with no user testing at the end.", src:"Jake Knapp, Sprint: How to Solve Big Problems and Test New Ideas in Just Five Days (2016)" },
+  { id:8, name:"Accessibility", tarot:"Strength", sym:"♿", quip:"Accessible design isn't charity. The curb cut helps the wheelchair user, the parent with a stroller, and you with your suitcase.", up:"Inclusive strength. Designing for the full spectrum of human ability: visual, auditory, motor, and cognitive. WCAG provides the standards; empathy provides the motivation. Accessible design almost always improves the experience for everyone. The curb cut effect is real.", rev:"Treating accessibility as a compliance checkbox instead of a design value. 'We'll add accessibility later' (you won't). Meeting the letter of WCAG while violating its spirit.", src:"WCAG 2.1 (W3C); Section 508; Microsoft Inclusive Design Toolkit" },
+  { id:9, name:"The Diary Study", tarot:"The Hermit", sym:"📓", quip:"Some truths only reveal themselves over time. Day 1 enthusiasm is not Day 14 behavior.", up:"Patience and longitudinal insight. The diary study tracks experience over time, capturing what lab studies miss: real context, habit formation, abandonment patterns, and the gap between stated intentions and actual behavior. Requires participant commitment and researcher patience.", rev:"Participant fatigue and dropout. The diary study that started with 20 participants and ended with 3. Collecting time-series data without the discipline to actually analyze temporal patterns.", src:"NNG Diary Studies Method; Bolger & Laurenceau, Intensive Longitudinal Methods (2013)" },
+  { id:10, name:"The A/B Test", tarot:"Wheel of Fortune", sym:"🎲", quip:"An A/B test without a hypothesis is just watching two random things happen to different people.", up:"Controlled experimentation at scale. The discipline of testing one variable while holding others constant. Statistical significance, confidence intervals, and the humility to let data overrule opinion. When done right, it converts debate into evidence.", rev:"P-hacking, peeking at results early, and declaring winners without statistical significance. Testing button colors when the entire flow is broken. Using A/B tests to avoid making design decisions.", src:"Ron Kohavi et al., Trustworthy Online Controlled Experiments (2020)" },
+  { id:11, name:"Ethical Research", tarot:"Justice", sym:"⚖️", quip:"Informed consent isn't a form. It's an ongoing conversation.", up:"Fairness, consent, and participant rights. The Belmont Report's three principles: respect for persons, beneficence, and justice. Ethical research protects participants, obtains genuine informed consent, ensures data privacy, and never sacrifices human dignity for a finding.", rev:"Ethics as theater. Getting the consent form signed without ensuring understanding. Collecting data you don't need. Researching vulnerable populations without proper safeguards. 'It's fine, it's just a usability test.'", src:"The Belmont Report (1979); UXPA Code of Professional Conduct" },
+  { id:12, name:"The Pivot", tarot:"The Hanged Man", sym:"🔄", quip:"A pivot isn't failure. It's expensive learning applied correctly.", up:"Seeing the problem from a new angle. The willingness to suspend assumptions and reframe. In Lean methodology, a pivot is a structured course correction based on validated learning. Sometimes the most valuable research finding is that you've been asking the wrong question.", rev:"Pivoting without learning. Changing direction based on panic rather than data. The 'pivot' that's really just giving up on a hard problem for a shinier one.", src:"Eric Ries, The Lean Startup (2011)" },
+  { id:13, name:"The Sunset", tarot:"Death", sym:"🌅", quip:"Killing a feature is a design decision. Letting it rot is negligence.", up:"Necessary endings. The disciplined act of deprecating features, products, or processes that no longer serve users. Makes space for what matters. Removing complexity is as valuable as adding capability.", rev:"Sunsetting without transition. Killing features users depend on without migration paths. Also: refusing to sunset anything, resulting in bloated products nobody can navigate.", src:"Antoine de Saint-Exupéry; Steve Krug, Don't Make Me Think (2000)" },
+  { id:14, name:"Mixed Methods", tarot:"Temperance", sym:"⚗️", quip:"Qual tells you why. Quant tells you how many. You need both to tell you what to do.", up:"Balance and triangulation. Combining qualitative depth with quantitative breadth. The power of convergent findings across methods: if interviews, surveys, and analytics all point the same direction, you can move with confidence. No single method tells the whole story.", rev:"Mixing methods without purpose. Running a survey because 'we should have numbers too' without knowing what you're measuring. Treating qual and quant as competitors rather than complements.", src:"John W. Creswell, Research Design: Qualitative, Quantitative, and Mixed Methods (2003)" },
+  { id:15, name:"Dark Patterns", tarot:"The Devil", sym:"😈", quip:"If the user's goal and the business's goal require deception to align, the business goal is wrong.", up:"Awareness of manipulative design. Recognizing dark patterns: confirm-shaming, roach motels, trick questions, forced continuity, misdirection, hidden costs. Understanding these patterns is essential for designing against them. Ethics is a competitive advantage.", rev:"You are the dark pattern. Designing interfaces that optimize for business metrics at the expense of user trust. 'Growth hacking' that's really just organized deception.", src:"Harry Brignull, Deceptive Design (deceptive.design); FTC Dark Patterns Report (2022)" },
+  { id:16, name:"The Failed Launch", tarot:"The Tower", sym:"💥", quip:"Every failed launch is a pile of lessons nobody wanted to learn this way.", up:"Sudden disruption and humbling clarity. The launch that revealed everything the team didn't test, didn't ask, and didn't want to hear. Painful but clarifying. The tower falls so something honest can be built in its place.", rev:"Refusing to learn from failure. Blaming users ('they just don't get it'), blaming marketing, blaming anyone except the product decisions. Launching the same thing again with a different name.", src:"Industry case studies; Tom Chi on rapid prototyping and failure" },
+  { id:17, name:"The North Star", tarot:"The Star", sym:"⭐", quip:"A north star metric that everyone tracks but nobody can influence is just a fancy dashboard decoration.", up:"Guiding vision and alignment. The north star metric connects daily work to strategic purpose. It answers: what does success look like for the user? A good north star is measurable, actionable, and directly tied to user value — not just business revenue.", rev:"Vanity metrics masquerading as north stars. DAU that doesn't measure value. Engagement numbers inflated by dark patterns. The metric that's easy to move but doesn't actually matter.", src:"Sean Ellis, North Star Framework; John Cutler on product metrics" },
+  { id:18, name:"The Edge Case", tarot:"The Moon", sym:"🌙", quip:"Today's edge case is tomorrow's support ticket volume.", up:"Hidden scenarios and uncertainty. The edge case forces you to confront what your design doesn't handle: error states, empty states, extreme inputs, accessibility needs, cultural variations, low-bandwidth conditions. Designing for the edge often improves the core.", rev:"Edge-case paralysis. Designing for every conceivable scenario instead of the most impactful ones. Using edge cases as an excuse to delay shipping. Also: ignoring edge cases entirely and calling it 'MVP.'", src:"Eric Meyer & Sara Wachter-Boettcher, Design for Real Life (2016)" },
+  { id:19, name:"The Delighter", tarot:"The Sun", sym:"☀️", quip:"A delighter without the basics is a clown car with heated seats.", up:"Joy, surprise, and exceeding expectations. The Kano Model distinguishes must-haves (expected), performance features (more is better), and delighters (unexpected joy). Delighters create emotional loyalty. But only after must-haves and performance features are solid.", rev:"Investing in delight before delivering on basics. The app with delightful animations that crashes on every third use. Confusing 'delightful' with 'distracting.'", src:"Noriaki Kano, Kano Model (1984); Aarron Walter, Designing for Emotion (2011)" },
+  { id:20, name:"The Retrospective", tarot:"Judgement", sym:"🔍", quip:"The retro where nobody says what actually went wrong is the retro that guarantees it'll happen again.", up:"Honest reflection and continuous improvement. The retrospective creates space for teams to evaluate what worked, what didn't, and what to change. Requires psychological safety to be effective. The goal isn't blame — it's learning.", rev:"Retros that are performative rather than productive. The same action items written down every sprint and never acted on. Retrospectives without psychological safety, where people say what's expected instead of what's true.", src:"Agile Manifesto (2001); Esther Derby & Diana Larsen, Agile Retrospectives (2006)" },
+  { id:21, name:"The Shipped Product", tarot:"The World", sym:"🌍", quip:"Shipped is not done. Shipped is the beginning of learning whether you were right.", up:"Completion, integration, and the full journey realized. The shipped product represents the culmination of research, design, engineering, and compromise. It's in users' hands now. The Double Diamond closes: you discovered, defined, developed, and delivered.", rev:"Shipping as the finish line instead of the starting line. The product that launched and was never measured, iterated, or supported. 'We shipped it' as an excuse to stop caring.", src:"Design Council UK, Double Diamond Framework (2005)" },
+];
+
+const wands = [
+  { id:1, name:"The Research Question", rank:"Ace", sym:"❓", quip:"A great research question is half the answer.", up:"The spark of inquiry. A well-framed research question is specific, actionable, and answerable with the methods available. It separates productive research from expensive wandering.", rev:"A question so broad it can't be answered, or so narrow it doesn't matter. 'Do users like our product?' is not a research question.", src:"Erika Hall, Just Enough Research (2013)" },
+  { id:2, name:"The Screener", rank:"Two", sym:"📋", quip:"Recruit the wrong participants and your entire study is a beautiful fiction.", up:"Strategic participant selection. The screener ensures you're talking to people whose behavior and context match your research questions. Includes disqualification criteria to filter professional survey-takers.", rev:"Screeners that let in anyone with a pulse. Recruiting for convenience instead of representativeness.", src:"NNG Recruiting Guidelines; Ethnio best practices" },
+  { id:3, name:"The Pilot Study", rank:"Three", sym:"🧪", quip:"The pilot exists to break your protocol so participants don't have to.", up:"Testing the test. A pilot session validates your discussion guide, task scenarios, and timing before real data collection begins. Catches ambiguous questions, broken prototypes, and unrealistic session lengths.", rev:"Skipping the pilot because you're confident. Using pilot data as real data. The study where you discovered your prototype was broken during session 4 of 8.", src:"Standard research methodology; NNG Pilot Testing" },
+  { id:4, name:"The Synthesis Session", rank:"Four", sym:"🧩", quip:"If you synthesize alone, you're just confirming your own biases with sticky notes.", up:"Collaborative analysis. Bringing the team together to pattern-match across data. Affinity diagramming, thematic analysis, and collaborative sensemaking.", rev:"Synthesis theater: the workshop where the loudest voice 'discovers' patterns they already believed.", src:"Karen Holtzblatt & Hugh Beyer, Contextual Design (1997)" },
+  { id:5, name:"The Stakeholder Conflict", rank:"Five", sym:"⚔️", quip:"When three stakeholders want three different studies, the real question is: what decision are we actually trying to make?", up:"Navigating competing agendas. The healthy friction of aligning research priorities with business needs. Conflict reveals what the organization actually values versus what it claims to.", rev:"Research held hostage by politics. Studies designed to prove what the HiPPO already decided.", src:"Leah Buley, The User Experience Team of One (2013)" },
+  { id:6, name:"The Breakthrough Finding", rank:"Six", sym:"💡", quip:"The best findings make the team uncomfortable for exactly 24 hours. Then they can't unsee it.", up:"The moment when data reframes everything. A finding so clear it changes how the team sees the problem. Often arrives from the edges — an unexpected participant comment, a behavior nobody anticipated.", rev:"Overstating findings for drama. The 'breakthrough' that's really a confirmation of the obvious, presented with extra exclamation points.", src:"Indi Young, Mental Models (2008)" },
+  { id:7, name:"The Methodology Defense", rank:"Seven", sym:"🛡️", quip:"'But that's only 5 people' — said by someone who tested with zero.", up:"Standing behind your method with confidence. Articulating why you chose this approach, its limitations, and why the findings are trustworthy. Five usability participants find 85% of problems.", rev:"Defensiveness instead of defense. Refusing to acknowledge methodological limitations.", src:"Jakob Nielsen, Why You Only Need to Test with 5 Users (2000)" },
+  { id:8, name:"Guerrilla Research", rank:"Eight", sym:"🏃", quip:"A coffee shop, a prototype, and 30 minutes can outperform a month of planning if you know what you're testing.", up:"Rapid, informal testing when speed matters more than rigor. Intercept testing, hallway usability, quick-and-dirty validation. The right tool when time is short and some data beats no data.", rev:"Using guerrilla research as an excuse to never do proper research.", src:"Steve Krug, Rocket Surgery Made Easy (2009)" },
+  { id:9, name:"The Contextual Inquiry", rank:"Nine", sym:"🏠", quip:"Users will tell you one thing in a conference room and show you something completely different in their kitchen.", up:"Research in the user's natural environment. Observing real behavior in real context reveals workarounds, environmental factors, and social dynamics that lab studies miss.", rev:"The contextual inquiry where you observed everything except the context.", src:"Hugh Beyer & Karen Holtzblatt, Contextual Design (1997)" },
+  { id:10, name:"The Research Repository", rank:"Ten", sym:"📚", quip:"The best research repository is one people actually search before commissioning a new study.", up:"Accumulated organizational knowledge. A well-maintained repository prevents redundant research, enables pattern recognition across studies, and democratizes access to insights.", rev:"The graveyard of PDF reports nobody reads.", src:"ResearchOps Community; Aurelius, EnjoyHQ, Dovetail platforms" },
+  { id:11, name:"The Discussion Guide", rank:"Page", sym:"📝", quip:"A discussion guide is a map, not a script. If you're reading it verbatim, you're not listening.", up:"The structured plan for a research session. Balances consistency across sessions with flexibility to follow unexpected threads.", rev:"The 47-question discussion guide that leaves no room for follow-up.", src:"Steve Portigal, Interviewing Users (2013)" },
+  { id:12, name:"The Moderator", rank:"Knight", sym:"🎤", quip:"The moderator's superpower is comfortable silence. Most people will fill it with the truth.", up:"Skilled session facilitation in action. Maintains neutrality, manages time, follows the thread, and creates space for honest responses.", rev:"The moderator who talks more than the participant. Leading questions, visible reactions to answers, and the dreaded 'That's great!' after every response.", src:"Steve Portigal, Interviewing Users (2013); Michael Margolis, Google UXR" },
+  { id:13, name:"The Research Lead", rank:"Queen", sym:"👑", quip:"A research lead's job isn't to run every study. It's to make sure the right questions get asked.", up:"Strategic research leadership. Prioritizes the research roadmap, mentors junior researchers, maintains methodological rigor, and translates research into organizational influence.", rev:"The lead who gatekeeps instead of empowers. Hoarding research ownership.", src:"Leah Buley, The User Experience Team of One (2013)" },
+  { id:14, name:"The VP of Research", rank:"King", sym:"🏛️", quip:"The VP's job is to make research undeniable at the leadership table — not to run sessions.", up:"Research as organizational strategy. Building the practice, securing resources, and ensuring research has a seat at the executive table.", rev:"The VP so removed from actual research that they've forgotten what a good insight looks like.", src:"Judd Antin on Research Leadership; ResearchOps Community" },
+];
+
+const cups = [
+  { id:1, name:"The First Interview", rank:"Ace", sym:"🌟", quip:"The first interview teaches you what you should have asked. The rest is refinement.", up:"The genesis of user understanding. Your first direct conversation with a user. Raw, unfiltered, often surprising.", rev:"An interview so poorly prepared that it confirms nothing and reveals nothing.", src:"NNG User Interview Techniques" },
+  { id:2, name:"The Rapport", rank:"Two", sym:"🤝", quip:"Rapport isn't being friendly. It's being trustworthy enough that someone tells you the truth.", up:"The connection between researcher and participant that enables honest disclosure. Built through active listening, mirroring, and genuine curiosity. Rapport is a skill, not a personality trait.", rev:"Over-rapport: becoming friends instead of researchers. Or: zero rapport, where the participant gives you nothing because they don't trust you.", src:"Steve Portigal, Interviewing Users (2013)" },
+  { id:3, name:"The Focus Group", rank:"Three", sym:"🗣️", quip:"A focus group is a group interview, not group therapy. Also, it's not usability testing.", up:"Collective perspectives and social dynamics. Useful for exploring attitudes, perceptions, and language — especially when group interaction itself generates insights.", rev:"Using focus groups for everything. Groupthink masquerading as consensus. The dominant participant who speaks for everyone.", src:"NNG: When to Use Which UX Research Methods (2014)" },
+  { id:4, name:"Participant Fatigue", rank:"Four", sym:"😴", quip:"If your participant is checking the time, your protocol failed 20 minutes ago.", up:"Recognizing when participants (or researchers) are spent. Respecting energy limits. Designing protocols that maintain engagement throughout.", rev:"The three-hour session with no breaks. Testing 47 screens in sequence.", src:"NNG Session Length Guidelines" },
+  { id:5, name:"The No-Show", rank:"Five", sym:"🚶", quip:"Over-recruit by 20% and you'll stop treating no-shows as personal betrayals.", up:"Recruitment failure as data. No-shows happen; resilient research plans account for them. Over-recruiting, backup participants, and flexible scheduling are standard practice.", rev:"A study derailed by poor recruitment. All participants no-showed because the incentive was insulting.", src:"NNG Recruiting Best Practices; Ethnio" },
+  { id:6, name:"The Incentive", rank:"Six", sym:"🎁", quip:"An incentive compensates someone for their time. It does not buy their opinions.", up:"Fair compensation for participant time and expertise. Incentives should match the ask: longer sessions and harder-to-reach populations warrant higher compensation.", rev:"Incentives so low they're insulting, or so high they attract people who'll say anything to get paid.", src:"UXPA Ethics Guidelines; NNG Incentive Recommendations" },
+  { id:7, name:"The Feature Request", rank:"Seven", sym:"🌠", quip:"Users request features. Researchers discover needs. The feature request is a symptom, not a diagnosis.", up:"The user's expressed desire — valuable as a signal, dangerous as a specification. Feature requests reveal underlying needs when you ask 'why do you want that?' enough times.", rev:"Building exactly what users asked for without understanding why they asked.", src:"Clayton Christensen, Jobs to Be Done Framework; Teresa Torres, Opportunity Solution Trees" },
+  { id:8, name:"The Churned User", rank:"Eight", sym:"🚶‍♀️", quip:"The users who left have more to teach you than the ones who stayed.", up:"Understanding attrition. Churned users reveal what the product failed to deliver. Exit interviews and churn analysis surface the gap between expectations and reality.", rev:"Ignoring churn because it's painful to study. Blaming churned users ('they weren't our target audience anyway').", src:"NNG on User Attrition Research" },
+  { id:9, name:"The Power User", rank:"Nine", sym:"🚀", quip:"Power users will teach you what's possible. But don't design for them alone, or you'll alienate everyone else.", up:"The deeply engaged user who's pushed the product to its limits. Power users reveal advanced needs, workarounds, and the product's ceiling.", rev:"Designing for power users at the expense of everyone else. Survivorship bias: only studying people who stuck around.", src:"Alan Cooper, About Face (1995) on designing for intermediates" },
+  { id:10, name:"The User Community", rank:"Ten", sym:"🌐", quip:"A user community isn't a focus group you don't have to pay. It's an ecosystem you have to respect.", up:"The collective of users as a living resource. Community forums, social media, support channels — all generate continuous signal about needs, pain points, and opportunities.", rev:"Mining community forums for 'insights' without context. Treating vocal community members as representative of all users.", src:"NNG Community-Based Research; Jared Spool on continuous discovery" },
+  { id:11, name:"The Persona", rank:"Page", sym:"👤", quip:"A persona based on assumptions is a horoscope with a stock photo.", up:"A research-based archetype representing a user segment's goals, behaviors, and context. Good personas are grounded in data, focus on goals (not demographics), and help teams make decisions.", rev:"The persona nobody uses. Based on demographics instead of behaviors. Created in a workshop with no research input.", src:"Alan Cooper, The Inmates Are Running the Asylum (1999)" },
+  { id:12, name:"The Journey Map", rank:"Knight", sym:"🗺️", quip:"A journey map is not a flowchart of your product. It's a timeline of your user's experience — including the parts where your product doesn't exist.", up:"Visualizing the end-to-end user experience across touchpoints, emotions, and time. Reveals gaps, pain points, and moments of truth.", rev:"The journey map created entirely from internal assumptions, with no user research. Looks beautiful on a wall. Represents nobody's actual experience.", src:"NNG Journey Mapping Guide; Jim Kalbach, Mapping Experiences (2016)" },
+  { id:13, name:"The Empathy Map", rank:"Queen", sym:"🧠", quip:"Says, Thinks, Does, Feels. If those four quadrants match perfectly, someone's lying to you.", up:"A structured framework for capturing what users say, think, do, and feel. Surfaces the gaps between stated preferences and actual behavior.", rev:"An empathy map filled out without talking to a single user. Using it as a creativity exercise instead of a research tool.", src:"Dave Gray, Empathy Map Canvas (XPLANE); Gamestorming" },
+  { id:14, name:"Jobs to Be Done", rank:"King", sym:"🎯", quip:"People don't want a quarter-inch drill. They want a quarter-inch hole. Actually, they want the shelf on the wall.", up:"Understanding user motivation at the deepest level. JTBD reframes products as 'hired' to accomplish a job in the user's life. Separates functional, social, and emotional dimensions.", rev:"Over-abstracting JTBD until it's meaningless. 'The job is to feel good' — well, yes, but that doesn't help you build anything.", src:"Clayton Christensen, Competing Against Luck (2016); Tony Ulwick, Outcome-Driven Innovation" },
+];
+
+const swords = [
+  { id:1, name:"The Hypothesis", rank:"Ace", sym:"💠", quip:"A hypothesis you can't disprove isn't a hypothesis. It's a belief.", up:"The testable prediction that focuses inquiry. A good hypothesis is specific, falsifiable, and grounded in prior observation.", rev:"Confirmation bias disguised as a hypothesis. 'We hypothesize that users will love this feature' is not falsifiable.", src:"Karl Popper, The Logic of Scientific Discovery; NNG on hypothesis-driven research" },
+  { id:2, name:"The Tradeoff", rank:"Two", sym:"⚖️", quip:"Every design decision is a tradeoff. The only question is whether you made it consciously.", up:"The deliberate weighing of competing values. Speed vs. thoroughness, simplicity vs. power, consistency vs. flexibility.", rev:"Refusing to acknowledge tradeoffs. 'We want it fast AND thorough AND cheap.'", src:"Barry Schwartz, The Paradox of Choice (2004)" },
+  { id:3, name:"The Negative Finding", rank:"Three", sym:"❌", quip:"If your research only ever validates, you're not researching. You're cheerleading.", up:"The finding that says 'no.' The design doesn't work. The feature isn't needed. The assumption was wrong. Negative findings prevent wasted effort.", rev:"Burying negative findings. Softening 'this doesn't work' into 'there are opportunities for improvement.'", src:"Publication bias research; NNG on reporting negative findings" },
+  { id:4, name:"Analysis Paralysis", rank:"Four", sym:"🧳", quip:"At some point, more data doesn't reduce uncertainty. It just delays the decision.", up:"The legitimate need to pause and think before acting. Recognizing when you have enough to decide vs. when you're genuinely uncertain.", rev:"Using 'we need more research' to avoid making a decision you're afraid of.", src:"Herbert Simon, Satisficing vs. Maximizing (1956); Barry Schwartz" },
+  { id:5, name:"The Scope Creep", rank:"Five", sym:"🐙", quip:"Scope creep doesn't creep. It gets invited in by people who say 'while we're at it...'", up:"Recognizing when a project is growing beyond its boundaries. Healthy scope management requires clear research objectives and the discipline to say 'that's a great question for a future study.'", rev:"A study that started as 'test the checkout flow' and ended as 'understand the entire customer lifecycle.'", src:"Project management fundamentals; NNG on scoping research" },
+  { id:6, name:"The Handoff", rank:"Six", sym:"📤", quip:"A handoff isn't a PDF in Slack. It's a shared understanding that survives the person who created it.", up:"The critical transition from research to design, or design to development. Good handoffs translate insights into the language of the receiving team.", rev:"The 87-slide research deck that nobody read. Throwing findings over the wall and hoping for the best.", src:"InVision Design Handoff Guide; NNG Research Reports" },
+  { id:7, name:"The Assumption", rank:"Seven", sym:"😶‍🌫️", quip:"Assumptions aren't bad. Untested assumptions are bad. Untested assumptions that everyone treats as facts are catastrophic.", up:"Identifying and surfacing the beliefs your team holds without evidence. Assumption mapping makes implicit beliefs explicit so they can be tested.", rev:"The entire product strategy built on an assumption nobody tested because 'everyone knows that's true.'", src:"Teresa Torres, Continuous Discovery Habits (2021); Lean UX assumption mapping" },
+  { id:8, name:"The Constraint", rank:"Eight", sym:"🔒", quip:"Constraints aren't the enemy of creativity. They're the reason creativity exists.", up:"Limitations that focus design. Technical constraints, business constraints, regulatory constraints, time constraints. The best designs work within constraints.", rev:"Treating all constraints as immovable when some are actually negotiable.", src:"Charles Eames; Bryan Lawson, How Designers Think" },
+  { id:9, name:"Imposter Syndrome", rank:"Nine", sym:"😰", quip:"If you've never felt like a fraud, you've probably never done anything hard enough to find out.", up:"The feeling that you're not qualified enough, experienced enough, or smart enough. Nearly universal among researchers and designers. It often shows up when you're growing.", rev:"Imposter syndrome so severe it prevents you from advocating for your work. Or its opposite: Dunning-Kruger confidence.", src:"Pauline Clance & Suzanne Imes, The Imposter Phenomenon (1978)" },
+  { id:10, name:"The Burnout", rank:"Ten", sym:"🔥", quip:"You can't empathize with users when you've run out of empathy for yourself.", up:"The occupational hazard of caring deeply in organizations that move fast. Emotional labor of empathy work, stakeholder management fatigue, and the weight of delivering findings nobody acts on.", rev:"Burnout normalized as hustle culture. 'I pulled an all-nighter to finish the research report' said as a badge of honor.", src:"Christina Maslach, Burnout Inventory; WHO ICD-11 burnout definition" },
+  { id:11, name:"The Sticky Note", rank:"Page", sym:"🟨", quip:"The sticky note is the atom of UX synthesis. Also, buy the good ones. The cheap ones fall off the wall.", up:"The humble building block of affinity diagramming, assumption mapping, journey mapping, and every workshop ever. One thought per note.", rev:"Sticky notes as performance art. The workshop wall covered in 400 notes that nobody organizes, photographs, or acts on.", src:"Jiro Kawakita, KJ Method / Affinity Diagramming (1960s)" },
+  { id:12, name:"The Competitive Audit", rank:"Knight", sym:"🕵️", quip:"Don't copy competitors. Understand why they made the choices they did, then decide if those reasons apply to you.", up:"Systematic evaluation of how competitors solve similar problems. Reveals industry patterns, unmet needs, and opportunities for differentiation.", rev:"The competitive audit that's just a feature comparison matrix. Copying a competitor's design without understanding their user base.", src:"NNG Competitive Usability Evaluations" },
+  { id:13, name:"The Framework", rank:"Queen", sym:"🖼️", quip:"A framework that requires a 30-minute explanation to use is not a framework. It's a lecture.", up:"A structured model that organizes complexity into actionable categories. Good frameworks are memorable, applicable, and create shared vocabulary.", rev:"Framework proliferation. Creating a new 2x2 matrix for every presentation.", src:"Industry practice; NNG on creating research frameworks" },
+  { id:14, name:"The Mental Model", rank:"King", sym:"🧠", quip:"The gap between the user's mental model and your system model is where every usability problem lives.", up:"The user's internal representation of how something works. When the product's conceptual model aligns with the user's mental model, interactions feel intuitive.", rev:"Assuming your mental model is the user's mental model. 'It's intuitive' — to whom?", src:"Don Norman, The Design of Everyday Things (1988); Indi Young, Mental Models (2008)" },
+];
+
+const pentacles = [
+  { id:1, name:"The Wireframe", rank:"Ace", sym:"⬜", quip:"A wireframe's job is to be wrong fast so the mockup can be right later.", up:"Low-fidelity representation of structure and layout. Wireframes focus conversations on information architecture, hierarchy, and flow before visual design adds noise.", rev:"Wireframes with so much visual detail they're indistinguishable from mockups. Also: skipping wireframes entirely.", src:"NNG on Wireframing; Jesse James Garrett, Elements of UX" },
+  { id:2, name:"The Iteration", rank:"Two", sym:"🔁", quip:"Iteration isn't doing the same thing twice. It's doing the next thing informed by the last thing.", up:"The cycle of build-test-learn-refine. True iteration incorporates feedback from each cycle into the next.", rev:"Iterating without learning. Version 7 of a design that has the same problems as version 1.", src:"IDEO Design Thinking; Lean UX by Jeff Gothelf" },
+  { id:3, name:"The Component", rank:"Three", sym:"🧱", quip:"A well-built component is a design decision you only have to make once.", up:"The reusable building block of interface design. Components encode design decisions (spacing, typography, behavior) so they're applied consistently.", rev:"Components so rigid they can't accommodate real content.", src:"Brad Frost, Atomic Design (2016)" },
+  { id:4, name:"The Style Guide", rank:"Four", sym:"🎨", quip:"A style guide nobody maintains is a museum exhibit of how things used to look.", up:"Documented visual and interaction standards. Color, typography, spacing, iconography, voice and tone. Requires ongoing maintenance.", rev:"The style guide created once, maintained never.", src:"NNG Style Guides; Google Material Design documentation" },
+  { id:5, name:"Technical Debt", rank:"Five", sym:"💸", quip:"Technical debt accrues interest. And unlike financial debt, nobody sends you a statement.", up:"The accumulated cost of shortcuts and workarounds. Exists in design (inconsistent patterns), research (unmaintained repositories), and engineering (legacy code).", rev:"Ignoring technical debt until it's the reason everything takes three times longer.", src:"Ward Cunningham, Technical Debt Metaphor (1992)" },
+  { id:6, name:"The Feature Flag", rank:"Six", sym:"🚩", quip:"Feature flags let you ship to production without shipping to everyone. That's not cowardice — it's intelligence.", up:"Controlled rollout and experimentation. Feature flags enable gradual releases, A/B testing, and quick rollbacks.", rev:"Feature flags that never get cleaned up. A codebase with 200 active flags where nobody knows which combinations are tested.", src:"Martin Fowler on Feature Toggles; LaunchDarkly best practices" },
+  { id:7, name:"The Backlog", rank:"Seven", sym:"📋", quip:"A backlog isn't a to-do list. It's a prioritized bet on what will deliver the most user value next.", up:"The prioritized list of work informed by research, strategy, and user needs. A well-maintained backlog reflects current understanding.", rev:"The bottomless backlog where items go to die. 847 tickets, no prioritization.", src:"Scrum Guide; Marty Cagan, Inspired (2017)" },
+  { id:8, name:"The Prototype", rank:"Eight", sym:"⚒️", quip:"The purpose of a prototype is to learn, not to impress. If it's too polished to throw away, it's too polished.", up:"A testable representation of a design concept. The right fidelity depends on the research question: test concepts with low-fi, test interactions with high-fi.", rev:"The prototype that took three weeks to build and was too precious to change when testing revealed problems.", src:"IDEO prototyping philosophy; Bill Buxton, Sketching User Experiences (2007)" },
+  { id:9, name:"The Design Critique", rank:"Nine", sym:"🗨️", quip:"'I don't like it' is not a critique. 'This doesn't meet the user's need because...' is.", up:"Structured, constructive feedback on design work. Good critiques focus on whether the design meets its objectives, not on personal taste.", rev:"Critiques that are actually approval ceremonies. Or the opposite: demolition exercises where nothing survives.", src:"Mike Monteiro, Design Is a Job (2012); Adam Connor & Aaron Irizarry, Discussing Design (2015)" },
+  { id:10, name:"The Design System (Mature)", rank:"Ten", sym:"🏗️", quip:"A mature design system is invisible. Teams use it without thinking about it. That's success.", up:"A design system at full maturity: adopted, maintained, governed, and continuously improving.", rev:"A 'mature' design system that's actually ossified. So bureaucratic that getting a new component approved takes longer than building the feature.", src:"Brad Frost, Atomic Design; Sparkbox Design Systems Survey" },
+  { id:11, name:"The Sketch", rank:"Page", sym:"✏️", quip:"The sketchbook is the cheapest prototyping tool ever invented. Also the fastest.", up:"The first externalization of an idea. Fast, disposable, and unconstrained by tools. Sketching is thinking made visible.", rev:"Skipping sketching because 'I can think faster in Figma.'", src:"Bill Buxton, Sketching User Experiences (2007)" },
+  { id:12, name:"The High-Fidelity Mockup", rank:"Knight", sym:"🖥️", quip:"High-fidelity is a communication tool. It shows stakeholders what users will actually see.", up:"Detailed, pixel-accurate design representation. Hi-fi mockups communicate visual design, content, and interaction details to developers and stakeholders.", rev:"A mockup so beautiful it obscures usability problems. Form without function.", src:"NNG on Prototype Fidelity" },
+  { id:13, name:"The Pattern Library", rank:"Queen", sym:"📚", quip:"Patterns solve problems. A pattern library remembers which problems have already been solved.", up:"A documented collection of reusable design solutions organized by the problems they solve.", rev:"A pattern library divorced from the actual product. Teams creating custom solutions for problems the library already solved.", src:"Jenifer Tidwell, Designing Interfaces (2005); UI-Patterns.com" },
+  { id:14, name:"The Product Launch", rank:"King", sym:"🚀", quip:"A launch isn't a finish line. It's the moment your assumptions meet reality at scale.", up:"The culmination of research, design, and development. A successful launch is measured not by the event itself but by what happens after.", rev:"Launch as celebration rather than measurement. 'We shipped!' as the end of the story rather than the beginning of learning.", src:"Marty Cagan, Inspired (2017); Lean Analytics" },
+];
+
+const spreads = [
+  { name:"The Sprint Retro", cards:3, desc:"A quick reflection on any completed project or sprint.", positions:["What Went Well","What Didn't","What to Change Next"], cols:3, guidance:"Draw three cards. Upright meanings suggest strengths or clear actions; reversed meanings suggest hidden blockers or unacknowledged problems." },
+  { name:"The Double Diamond", cards:4, desc:"Map your project to the Design Council's framework.", positions:["Discover (diverge)","Define (converge)","Develop (diverge)","Deliver (converge)"], cols:2, guidance:"Draw four cards, one per diamond phase. Reversed cards in early phases suggest you're converging too soon; reversed in later phases suggest you're still diverging when you should be deciding." },
+  { name:"The User Journey", cards:5, desc:"Explore the full arc of your user's experience.", positions:["Awareness","Consideration","Decision","First Use","Retention"], cols:5, guidance:"Draw five cards left to right. Pay special attention to reversed cards — they signal where users drop off or disengage. Cups cards in early positions suggest strong emotional resonance; Swords cards suggest cognitive friction." },
+  { name:"The Stakeholder Alignment", cards:3, desc:"Navigate the triangle of competing needs.", positions:["Business Goal","User Need","Technical Reality"], cols:3, guidance:"When all three cards are upright, you have alignment. When any is reversed, that's where the tension lives — and where you need to negotiate." },
+];
+
+// ============================================================
+// APP STATE & LOGIC
+// ============================================================
+const allSuits = { major: majorArcana, wands, cups, swords, pentacles };
+const tabKeys = ["major","wands","cups","swords","pentacles","spreads"];
+let currentTab = "major";
+let selectedCard = null;
+let drawnCards = null;
+let activeSpread = null;
+
+function getAllCards() {
+  return [...majorArcana, ...wands, ...cups, ...swords, ...pentacles];
+}
+
+function getSuitForCard(card) {
+  if (majorArcana.includes(card)) return "major";
+  if (wands.includes(card)) return "wands";
+  if (cups.includes(card)) return "cups";
+  if (swords.includes(card)) return "swords";
+  return "pentacles";
+}
+
+function drawSpread(spread) {
+  const all = getAllCards();
+  const shuffled = all.sort(() => Math.random() - 0.5);
+  drawnCards = shuffled.slice(0, spread.cards).map(c => ({
+    ...c, reversed: Math.random() < 0.3, suit: getSuitForCard(c)
+  }));
+  activeSpread = spread;
+  render();
+}
+
+function openCard(card, suit) {
+  selectedCard = { card, suit, color: SUITS[suit].color };
+  renderModal();
+}
+
+function closeModal() {
+  selectedCard = null;
+  document.getElementById("modalContainer").innerHTML = "";
+}
+
+function switchTab(t) {
+  currentTab = t;
+  selectedCard = null;
+  drawnCards = null;
+  activeSpread = null;
+  render();
+}
+
+// ============================================================
+// RENDERING
+// ============================================================
+function render() {
+  renderTabs();
+  renderSuitDesc();
+  renderCardGrid();
+  renderSpreads();
+}
+
+function renderTabs() {
+  const el = document.getElementById("tabs");
+  el.innerHTML = tabKeys.map(t => {
+    const info = t === "spreads" ? { name:"Spreads", icon:"🎴" } : SUITS[t];
+    const active = currentTab === t;
+    const bg = active ? (t === "spreads" ? "#7C3AED" : SUITS[t].color) : "#1E293B";
+    const color = active ? "#FFF" : "#94A3B8";
+    return `<button class="tab-btn ${active ? 'active' : ''}" onclick="switchTab('${t}')" style="background:${bg};color:${color}">${info.icon} ${info.name}</button>`;
+  }).join("");
+}
+
+function renderSuitDesc() {
+  const el = document.getElementById("suitDesc");
+  if (currentTab === "spreads") { el.innerHTML = ""; return; }
+  const s = SUITS[currentTab];
+  el.innerHTML = `<div class="title" style="color:${s.color}">${s.subtitle}</div><div class="desc">${s.desc}</div>`;
+}
+
+function renderCardGrid() {
+  const el = document.getElementById("cardGrid");
+  if (currentTab === "spreads") { el.classList.add("hidden"); return; }
+  el.classList.remove("hidden");
+  const cards = allSuits[currentTab];
+  const color = SUITS[currentTab].color;
+  el.innerHTML = cards.map((c, i) => {
+    const tarotLabel = c.tarot || c.rank;
+    return `<div class="card" onclick="openCard(${currentTab === 'major' ? 'majorArcana' : currentTab}[${i}],'${currentTab}')"
+      style="background:linear-gradient(160deg,${color}22,#1E293B);border:1px solid ${color}30"
+      onmouseenter="this.style.borderColor='${color}';this.style.boxShadow='0 8px 24px ${color}20'"
+      onmouseleave="this.style.borderColor='${color}30';this.style.boxShadow='none';this.style.transform='none'">
+      <div class="sym">${c.sym}</div>
+      <div class="tarot-name">${tarotLabel}</div>
+      <div class="card-name">${c.name}</div>
+      <div class="tap">tap to read</div>
+    </div>`;
+  }).join("");
+}
+
+function renderModal() {
+  if (!selectedCard) return;
+  const { card, suit, color } = selectedCard;
+  const tarotLabel = card.tarot || (card.rank + " of " + SUITS[suit].subtitle);
+  document.getElementById("modalContainer").innerHTML = `
+    <div class="modal-overlay" onclick="closeModal()">
+      <div class="modal" onclick="event.stopPropagation()" style="border:2px solid ${color}40">
+        <div class="modal-top">
+          <div>
+            <div class="sym">${card.sym}</div>
+            <div class="tarot-label">${tarotLabel}</div>
+            <h2>${card.name}</h2>
+            <div class="quip" style="color:${color}">"${card.quip}"</div>
+          </div>
+          <button class="close-btn" onclick="closeModal()">✕</button>
+        </div>
+        <div style="margin-top:20px">
+          <div class="meaning-label"><span class="icon">☀️</span><span class="label" style="color:#22C55E">UPRIGHT</span></div>
+          <p class="meaning-text">${card.up}</p>
+          <div class="meaning-label"><span class="icon">🌙</span><span class="label" style="color:#EF4444">REVERSED</span></div>
+          <p class="meaning-text">${card.rev}</p>
+          <div class="source-box">
+            <div class="src-label">SOURCE</div>
+            <div class="src-text">${card.src}</div>
+          </div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderSpreads() {
+  const el = document.getElementById("spreadsContainer");
+  if (currentTab !== "spreads") { el.classList.add("hidden"); return; }
+  el.classList.remove("hidden");
+
+  if (!activeSpread) {
+    el.innerHTML = `
+      <div style="text-align:center;margin-bottom:20px">
+        <div style="color:#7C3AED;font-size:16px;font-weight:700">Reading Layouts</div>
+        <div style="color:#64748B;font-size:13px">Choose a spread and draw cards from the full 78-card deck</div>
+      </div>
+      ${spreads.map((sp, i) => `
+        <div class="spread-card" onclick="drawSpread(spreads[${i}])">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <h3>${sp.name}</h3>
+              <p>${sp.desc}</p>
+              <div class="spread-tags">${sp.positions.map(p => `<span class="spread-tag">${p}</span>`).join("")}</div>
+            </div>
+            <div class="spread-info">${sp.cards} cards →</div>
+          </div>
+        </div>
+      `).join("")}`;
+    return;
+  }
+
+  // Active spread reading
+  const sp = activeSpread;
+  el.innerHTML = `
+    <div style="text-align:center;margin-bottom:16px">
+      <h2 style="font-size:22px;font-weight:700;color:#F8FAFC;margin:0">${sp.name}</h2>
+      <p style="font-size:13px;color:#94A3B8;margin:4px 0">${sp.guidance}</p>
+      <button class="action-btn btn-primary" onclick="drawSpread(spreads[${spreads.indexOf(sp)}])">🔄 Redraw</button>
+      <button class="action-btn btn-secondary" onclick="activeSpread=null;drawnCards=null;render()">← Back to Spreads</button>
+    </div>
+    <div class="reading-grid" style="grid-template-columns:repeat(${sp.cols},1fr)">
+      ${drawnCards.map((c, i) => {
+        const suitColor = SUITS[c.suit].color;
+        return `<div class="reading-card" onclick="openCard(drawnCards[${i}],'${c.suit}')"
+          style="background:linear-gradient(160deg,${suitColor}25,#1E293B);border:2px solid ${suitColor}50;${c.reversed ? 'transform:rotate(180deg)' : ''}">
+          <div class="sym">${c.sym}</div>
+          <div class="card-name">${c.name}</div>
+          <div class="tarot-name">${c.tarot || c.rank + " of " + SUITS[c.suit].subtitle}</div>
+        </div>`;
+      }).join("")}
+    </div>
+    <div class="position-labels" style="grid-template-columns:repeat(${sp.cols},1fr)">
+      ${sp.positions.map(p => `<div class="pos-label">${p}</div>`).join("")}
+    </div>
+    <div class="reading-section">
+      <h3>Your Reading</h3>
+      ${drawnCards.map((c, i) => {
+        const suitColor = SUITS[c.suit].color;
+        return `<div class="reading-item" style="border-left:3px solid ${suitColor}">
+          <div class="reading-item-top">
+            <div>
+              <span class="reading-pos">${sp.positions[i]}</span>
+              <span class="reading-arrow">→</span>
+              <span class="reading-name">${c.sym} ${c.name}</span>
+            </div>
+            ${c.reversed ? '<span class="reversed-badge">REVERSED</span>' : ''}
+          </div>
+          <p class="reading-meaning">${c.reversed ? c.rev : c.up}</p>
+        </div>`;
+      }).join("")}
+    </div>`;
+}
+
+// Initial render
+render();
+</script>
+</body>
+</html>
