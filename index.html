@@ -4,8 +4,10 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>UX Tarot — The Researcher's Arcana</title>
+<meta name="author" content="Liz Dugan">
+<meta name="copyright" content="© 2026 Liz Dugan. All rights reserved.">
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
+  * { margin: 0; padding: 0; box-sizing: border-box; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; }
   body { background: #0F172A; color: #E2E8F0; font-family: system-ui, -apple-system, sans-serif; min-height: 100vh; }
 
   .header { text-align: center; padding: 32px 16px 16px; }
@@ -416,6 +418,33 @@ function renderSpreads() {
 
 // Initial render
 render();
+
+// ============================================================
+// COPY PROTECTION
+// ============================================================
+// Disable right-click context menu
+document.addEventListener('contextmenu', e => e.preventDefault());
+
+// Block copy/cut/paste keyboard shortcuts, view-source, save, and dev tools
+document.addEventListener('keydown', e => {
+  // Ctrl/Cmd + U (view source), S (save), C (copy), X (cut), A (select all)
+  if ((e.ctrlKey || e.metaKey) && ['u','s','c','x','a'].includes(e.key.toLowerCase())) {
+    e.preventDefault();
+  }
+  // F12 (dev tools)
+  if (e.key === 'F12') e.preventDefault();
+  // Ctrl/Cmd + Shift + I/J/C (dev tools panels)
+  if ((e.ctrlKey || e.metaKey) && e.shiftKey && ['i','j','c'].includes(e.key.toLowerCase())) {
+    e.preventDefault();
+  }
+});
+
+// Block drag
+document.addEventListener('dragstart', e => e.preventDefault());
+
+// Block copy/cut events
+document.addEventListener('copy', e => e.preventDefault());
+document.addEventListener('cut', e => e.preventDefault());
 </script>
 </body>
 </html>
